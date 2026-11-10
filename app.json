@@ -20,6 +20,17 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "scheme": "foodrescue",
+    "plugins": [
+      "expo-secure-store",
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow FoodRescue to show surplus food listings near you."
+        }
+      ]
+    ]
   }
 }
