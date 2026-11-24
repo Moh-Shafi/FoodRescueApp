@@ -20,12 +20,13 @@ Every day, food businesses discard large amounts of edible surplus food at closi
 | Real-time location tracking with adaptive sampling | ✅ Implemented |
 | Haversine distance calculation & nearest-first matching | ✅ Implemented |
 | Custom map markers for food listings | ✅ Implemented |
-| Debounced reactive search (RxJS pipeline) | ✅ Implemented |
+| Debounced reactive search & filter (RxJS pipeline) | ✅ Implemented |
+| Real-time data pipeline (WebSocket / Live Event Stream) | ✅ Implemented |
+| Graceful offline fallbacks & async storage action queue | ✅ Implemented |
 | Encrypted credential storage (expo-secure-store) | 🔧 Service ready |
 | Scoped local document storage (expo-file-system) | 🔧 Service ready |
 | Courier tracking & KTP verification | 📋 Planned (Milestone 2+) |
 | Impact analytics dashboard | 📋 Planned |
-| Backend sync (Firebase/Supabase) | 📋 Planned |
 
 ## Tech Stack
 
@@ -44,19 +45,45 @@ Every day, food businesses discard large amounts of edible surplus food at closi
 src/
 ├── app/                  # Expo Router screens (routes only)
 │   ├── _layout.tsx       # Stack navigator + SafeAreaProvider
-│   ├── index.tsx         # Map screen: tracking, markers, nearest list
-│   ├── search.tsx        # RxJS-powered search
-│   └── listing/[id].tsx  # Listing detail + reserve action
-├── components/           # Reusable UI (FoodMarker, ListingCard — memoized)
+│   ├── index.tsx         # Map screen: tracking, markers, nearest list, NetworkStatusBar
+│   ├── search.tsx        # RxJS-powered search & multi-criteria filter
+│   └── listing/[id].tsx  # Listing detail + reserve & offline queue fallback
+├── components/           # Reusable UI (FoodMarker, ListingCard, NetworkStatusBar, Milestone3DemoModal)
 ├── data/                 # Mock inventory until backend is wired
 ├── hooks/                # useLocationTracking (custom hook, adaptive GPS)
-├── services/             # secureStore, fileStorage, searchPipeline
-├── store/                # Zustand store (immutable updates via actions)
-├── types/                # Shared domain types
+├── services/             # secureStore, fileStorage, searchPipeline, realtimeSync, offlineCache
+├── store/                # Zustand store (immutable updates, connection status, offline queue)
+├── types/                # Shared domain types & realtime/offline contracts
 └── utils/                # geo.ts — Haversine + distance formatting
 ```
 
-Separation of concerns: **screens** handle UI only, **hooks** own platform side-effects, **services** wrap native/storage APIs, **store** owns state, **utils** hold pure functions (e.g. Haversine — unit-testable).
+Separation of concerns: **screens** handle UI only, **hooks** own platform side-effects, **services** wrap native/storage/realtime APIs, **store** owns state, **utils** hold pure functions (e.g. Haversine — unit-testable).
+
+## Milestone 3: Real-Time Data Pipeline & Background Task Processing (Sub-CPMK 9)
+
+Pertemuan 11 focuses on advanced reactive data streams, real-time synchronization, and graceful degradation during network disruption:
+
+1. **RxJS Search & Filter Pipeline (`src/services/searchPipeline.ts`):**
+   - **`debounceTime(300)`**: Prevents excessive filtering cycles while the user is actively typing.
+   - **`distinctUntilChanged(areCriteriaEqual)`**: Suppresses identical emissions when query, category, or status parameters have not changed.
+   - **`switchMap(executeFilterAsync)`**: Automatically cancels in-flight async search tasks when newer search criteria are emitted, eliminating race conditions.
+   - Supports multi-criteria filtering: category chips (`Cooked meals`, `Bakery`, `Buffet`, `Produce`), status (`all`, `available`, `claimed`), and sort ordering (`distance`, `servings`, `expiry`).
+
+2. **Real-Time Data Integration (`src/services/realtimeSync.ts`):**
+   - Implements a reactive event stream (`Observable<RealtimeEvent>`) powered by RxJS `Subject` and `BehaviorSubject`.
+   - Real-time broadcasts for newly published donations (`LISTING_CREATED`), online status updates (`LISTING_CLAIMED`), and cache invalidations update map markers and listing cards without requiring screen refresh.
+
+3. **Graceful Offline Fallbacks & Action Queue (`src/services/offlineCache.ts`):**
+   - **Local Storage Cache**: Automatically caches food listings in `@react-native-async-storage/async-storage`. If network drops, the application falls back immediately to cached data.
+   - **Offline Action Queue**: Reservations made while offline are saved to an persistent offline queue and optimistically reflected in the UI.
+   - **Reconnection with Backoff**: When network is restored, the queue automatically syncs to the server with exponential backoff and delivers confirmation feedback to the user.
+
+4. **Live Class Presentation & Demo Controller (`src/components/Milestone3DemoModal.tsx`):**
+   - Tap **`⚡ Demo M3`** in the status bar on any screen to launch interactive controls for defense:
+     - **📡 Broadcast New Surplus Listing**: Demonstrates instantaneous real-time arrival of new listings.
+     - **🏷️ Broadcast Listing Claimed**: Demonstrates real-time state mutation across devices.
+     - **🔌 Simulate Network Disconnect**: Switches app to offline mode to demonstrate cached listing persistence and offline reservation queuing.
+     - **🟢 Reconnect & Sync Queue**: Restores connection and flushes queued offline actions.
 
 ## Milestone Progress
 
@@ -64,7 +91,7 @@ Separation of concerns: **screens** handle UI only, **hooks** own platform side-
 |---|---|---|---|
 | 9 | LBS & Interactive Mapping | react-native-maps + expo-location, `useLocationTracking` with adaptive `distanceInterval`, custom markers, Haversine | ✅ Done |
 | 10 | Offline-First & Secure Storage | expo-secure-store, expo-file-system scoped storage, runtime permissions | 🔧 Services ready |
-| 11 | Real-Time Data Pipeline | RxJS debounce/distinct/switchMap, WebSocket/Firebase sync, offline fallbacks | 🔧 Pipeline ready |
+| 11 | Real-Time Data Pipeline | RxJS debounce/distinct/switchMap, WebSocket/Firebase sync, offline fallbacks | ✅ Done |
 | 12 | Advanced UI & Responsiveness | useWindowDimensions layout, reanimated micro-interactions, KeyboardAvoidingView, skeleton loaders | 📋 Planned |
 | 13 | AI Vibe Coding & 16ms Audit | Refactor pass, Architect's Audit (errors, fallbacks, zero-leak cleanup), memoization profiling | 📋 Planned |
 | 14 | Testing & EAS Build | Unit tests for geo/store, component tests, APK via EAS | 📋 Planned |

@@ -27,3 +27,40 @@ export interface RescueStats {
   mealsSaved: number;
   co2eKgSaved: number;
 }
+
+// ==========================================
+// Milestone 3: Real-Time & Reactive Pipeline
+// ==========================================
+
+export type ConnectionStatus = 'connected' | 'connecting' | 'reconnecting' | 'offline';
+
+export type RealtimeEventType =
+  | 'LISTING_CREATED'
+  | 'LISTING_CLAIMED'
+  | 'LISTING_UPDATED'
+  | 'OFFLINE_SYNC'
+  | 'HEARTBEAT';
+
+export interface RealtimeEvent {
+  id: string;
+  type: RealtimeEventType;
+  timestamp: string;
+  payload?: any;
+  message: string;
+}
+
+export interface OfflineAction {
+  id: string;
+  type: 'RESERVE_LISTING';
+  listingId: string;
+  timestamp: string;
+  data: Record<string, any>;
+}
+
+export interface SearchFilterCriteria {
+  query: string;
+  category: string; // 'All' | 'Cooked meals' | 'Bakery' | 'Buffet' | 'Produce'
+  status: 'all' | 'available' | 'claimed';
+  sortBy: 'distance' | 'servings' | 'expiry';
+}
+

@@ -23,7 +23,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MOCK_LISTINGS } from '../data/listings';
 import { FoodMarker } from '../components/FoodMarker';
 import { ListingCard } from '../components/ListingCard';
+import { NetworkStatusBar } from '../components/NetworkStatusBar';
 import { useLocationTracking } from '../hooks/useLocationTracking';
+import { realtimeSync } from '../services/realtimeSync';
 import { useAppStore } from '../store/useAppStore';
 import { formatDistanceKm } from '../utils/geo';
 import type { LatLng } from '../types';
@@ -38,13 +40,12 @@ export default function MapScreen() {
   const listings = useAppStore((s) => s.listings);
   const selectedId = useAppStore((s) => s.selectedId);
   const setUserLocation = useAppStore((s) => s.setUserLocation);
-  const setListings = useAppStore((s) => s.setListings);
   const selectListing = useAppStore((s) => s.selectListing);
 
-  // Load mock inventory once, then keep distances fresh as GPS updates.
+  // Initialize Real-time synchronization & offline cached inventory
   useEffect(() => {
-    setListings(MOCK_LISTINGS);
-  }, [setListings]);
+    realtimeSync.initialize(MOCK_LISTINGS);
+  }, []);
 
   useEffect(() => {
     if (location) {
@@ -79,6 +80,9 @@ export default function MapScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <StatusBar style="dark" />
+
+      {/* Real-Time & Offline Status Bar with M3 Demo Controller */}
+      <NetworkStatusBar />
 
       {Platform.OS !== 'web' ? (
         <MapView style={styles.map} initialRegion={region} region={region}>
